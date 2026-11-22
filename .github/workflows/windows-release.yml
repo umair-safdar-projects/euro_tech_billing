@@ -17,9 +17,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Flutter
+      - name: Set up Flutter 3.47.5
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.47.5'
           channel: stable
           cache: true
 
@@ -28,6 +29,12 @@ jobs:
 
       - name: Check Flutter environment
         run: flutter doctor -v
+
+      - name: Verify Flutter version
+        shell: pwsh
+        run: |
+          flutter --version
+          dart --version
 
       - name: Install dependencies
         run: flutter pub get
@@ -45,10 +52,13 @@ jobs:
         shell: pwsh
         run: |
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+
           if (-not (Test-Path $iscc)) {
             throw "Inno Setup 6 compiler not found: $iscc"
           }
+
           & $iscc /DMyAppVersion=1.0.0 installer\euro_tech_billing.iss
+
           if ($LASTEXITCODE -ne 0) {
             throw "Installer compilation failed."
           }
@@ -57,10 +67,15 @@ jobs:
         shell: pwsh
         run: |
           $installer = "dist\EuroTechBilling-Setup-1.0.0.exe"
+
           if (-not (Test-Path $installer)) {
             throw "Expected installer not found: $installer"
           }
-          Get-Item $installer | Select-Object Name, Length
+
+          Get-Item $installer |
+            Select-Object Name, Length
+
+          Get-FileHash $installer -Algorithm SHA256
 
       - name: Upload Windows installer
         uses: actions/upload-artifact@v4
