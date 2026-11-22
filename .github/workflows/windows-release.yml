@@ -1,0 +1,71 @@
+
+name: Euro Tech Windows Installer
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    name: Build Windows Installer
+    runs-on: windows-2022
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Enable Windows desktop
+        run: flutter config --enable-windows-desktop
+
+      - name: Check Flutter environment
+        run: flutter doctor -v
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze project
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Build Windows release
+        run: flutter build windows --release --build-name 1.0.0 --build-number 1
+
+      - name: Compile installer
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            throw "Inno Setup 6 compiler not found: $iscc"
+          }
+          & $iscc /DMyAppVersion=1.0.0 installer\euro_tech_billing.iss
+          if ($LASTEXITCODE -ne 0) {
+            throw "Installer compilation failed."
+          }
+
+      - name: Verify installer
+        shell: pwsh
+        run: |
+          $installer = "dist\EuroTechBilling-Setup-1.0.0.exe"
+          if (-not (Test-Path $installer)) {
+            throw "Expected installer not found: $installer"
+          }
+          Get-Item $installer | Select-Object Name, Length
+
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: EuroTechBilling-Windows-Installer
+          path: dist/EuroTechBilling-Setup-1.0.0.exe
+          if-no-files-found: error
+          retention-days: 7
