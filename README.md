@@ -28,19 +28,18 @@ flutter build windows
 On Windows, the reproducible release and Inno Setup package are built with:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\build_windows_release.ps1 -Version 1.0.0 -BuildNumber 1
+powershell -ExecutionPolicy Bypass -File scripts\build_windows_release.ps1 -Version 1.0.1 -BuildNumber 2
 ```
 
 Tests use isolated temporary SQLite databases and do not touch operator data.
 
 ## Current scope
 
-- Persistent navigation shell and professional desktop theme
+- Responsive, persistent navigation shell with named routes and a compact drawer
 - Versioned schema, migrations, foreign keys, constraints, indexes, and audit-ready tables
 - Idempotent product seeds that preserve operator changes
 - Persistent, validated company settings
 - Product price editing, custom services, and activation/deactivation
-- Explicit empty states for future modules (no fabricated business data)
 - Searchable customer management with details and customer invoice history
 - Keyboard-friendly invoice entry with catalogue and custom lines
 - Exact integer-minor-unit calculations and fixed discounts

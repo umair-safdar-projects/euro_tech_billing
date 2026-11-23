@@ -27,9 +27,15 @@ import '../../features/reports/presentation/reports_controller.dart';
 import '../../features/reports/services/report_export_service.dart';
 
 class InitialBinding extends Bindings {
+  InitialBinding({AppDatabase? database, this.startAutomaticBackup = true})
+    : _database = database ?? AppDatabase.instance;
+
+  final AppDatabase _database;
+  final bool startAutomaticBackup;
+
   @override
   void dependencies() {
-    Get.put(AppDatabase.instance, permanent: true);
+    Get.put(_database, permanent: true);
     Get.lazyPut(() => CompanySettingsRepository(Get.find()), fenix: true);
     Get.lazyPut(() => ProductRepository(Get.find()), fenix: true);
     Get.lazyPut(() => CustomerRepository(Get.find()), fenix: true);
@@ -68,6 +74,10 @@ class InitialBinding extends Bindings {
     Get.lazyPut(() => DashboardController(Get.find()), fenix: true);
     Get.lazyPut(() => ReportsController(Get.find(), Get.find()), fenix: true);
     Get.lazyPut(() => PrintingSettingsController(Get.find()), fenix: true);
-    Get.put(BackupController(Get.find()), permanent: true);
+    if (startAutomaticBackup) {
+      Get.put(BackupController(Get.find()), permanent: true);
+    } else {
+      Get.lazyPut(() => BackupController(Get.find()), fenix: true);
+    }
   }
 }

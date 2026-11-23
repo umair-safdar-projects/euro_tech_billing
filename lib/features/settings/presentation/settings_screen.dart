@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:file_selector/file_selector.dart';
 
 import '../../../core/widgets/page_header.dart';
+import '../../../core/constants/build_info.dart';
 import '../../printing/presentation/printing_settings_card.dart';
 import '../../backups/presentation/backup_settings_card.dart';
 import 'settings_controller.dart';
@@ -181,8 +182,8 @@ class SettingsScreen extends GetView<SettingsController> {
                     ),
                     const Text('EDGING AND CUTTING'),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Euro Tech Billing 1.0.0 • Offline desktop edition',
+                    Text(
+                      'Euro Tech Billing ${BuildInfo.display} • Offline desktop edition',
                       style: TextStyle(color: Colors.blueGrey),
                     ),
                     const SizedBox(height: 8),

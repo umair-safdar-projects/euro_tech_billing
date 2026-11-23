@@ -12,10 +12,10 @@ From the project root, run:
 
 ```powershell
 flutter doctor -v
-powershell -ExecutionPolicy Bypass -File scripts\build_windows_release.ps1 -Version 1.0.0 -BuildNumber 1
+powershell -ExecutionPolicy Bypass -File scripts\build_windows_release.ps1 -Version 1.0.1 -BuildNumber 2
 ```
 
-The script runs dependency resolution, analysis, all tests, `flutter build windows --release`, verifies `EuroTechBilling.exe`, and invokes Inno Setup. The installer is written to `dist\EuroTechBilling-Setup-1.0.0.exe`.
+The script runs dependency resolution, analysis, all tests, `flutter build windows --release`, verifies the executable and required runtime bundle, and invokes Inno Setup. The installer is written to `dist\EuroTechBilling-Setup-1.0.1.exe`.
 
 The current clean ET icon is a temporary vector-led brand asset. To replace it, update `assets\branding\euro_tech_icon.svg` and its 256-pixel PNG render, then run `dart run tool\generate_app_icon.dart`. That command rebuilds the multi-resolution Windows `.ico`; verify all sizes in Explorer before release.
 
@@ -25,8 +25,8 @@ Equivalent manual commands:
 flutter pub get
 flutter analyze
 flutter test
-flutter build windows --release --build-name 1.0.0 --build-number 1
-"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion=1.0.0 installer\euro_tech_billing.iss
+flutter build windows --release --build-name 1.0.1 --build-number 2 --dart-define=APP_BUILD_SHA=local --dart-define=APP_BUILD_RUN=local
+"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion=1.0.1 installer\euro_tech_billing.iss
 ```
 
 ## Shop installation

@@ -46,7 +46,30 @@ jobs:
         run: flutter test
 
       - name: Build Windows release
-        run: flutter build windows --release --build-name 1.0.0 --build-number 1
+        run: >-
+          flutter build windows --release
+          --build-name 1.0.1
+          --build-number 2
+          --dart-define=APP_BUILD_SHA=${{ github.sha }}
+          --dart-define=APP_BUILD_RUN=${{ github.run_number }}
+
+      - name: Verify release bundle
+        shell: pwsh
+        run: |
+          $release = "build\windows\x64\runner\Release"
+          $required = @(
+            "EuroTechBilling.exe",
+            "flutter_windows.dll",
+            "data\app.so",
+            "data\flutter_assets",
+            "sqlite3.dll"
+          )
+          foreach ($path in $required) {
+            $fullPath = Join-Path $release $path
+            if (-not (Test-Path $fullPath)) {
+              throw "Required Windows release component is missing: $fullPath"
+            }
+          }
 
       - name: Compile installer
         shell: pwsh
@@ -57,7 +80,7 @@ jobs:
             throw "Inno Setup 6 compiler not found: $iscc"
           }
 
-          & $iscc /DMyAppVersion=1.0.0 installer\euro_tech_billing.iss
+          & $iscc /DMyAppVersion=1.0.1 installer\euro_tech_billing.iss
 
           if ($LASTEXITCODE -ne 0) {
             throw "Installer compilation failed."
@@ -66,7 +89,7 @@ jobs:
       - name: Verify installer
         shell: pwsh
         run: |
-          $installer = "dist\EuroTechBilling-Setup-1.0.0.exe"
+          $installer = "dist\EuroTechBilling-Setup-1.0.1.exe"
 
           if (-not (Test-Path $installer)) {
             throw "Expected installer not found: $installer"
@@ -80,7 +103,7 @@ jobs:
       - name: Upload Windows installer
         uses: actions/upload-artifact@v4
         with:
-          name: EuroTechBilling-Windows-Installer
-          path: dist/EuroTechBilling-Setup-1.0.0.exe
+          name: EuroTechBilling-Windows-Installer-${{ github.run_number }}-${{ github.sha }}
+          path: dist/EuroTechBilling-Setup-1.0.1.exe
           if-no-files-found: error
           retention-days: 7

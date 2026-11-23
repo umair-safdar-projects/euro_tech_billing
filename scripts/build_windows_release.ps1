@@ -1,6 +1,8 @@
 param(
-  [string]$Version = "1.0.0",
-  [string]$BuildNumber = "1",
+  [string]$Version = "1.0.1",
+  [string]$BuildNumber = "2",
+  [string]$SourceRevision = "local",
+  [string]$PipelineRun = "local",
   [string]$Flutter = "flutter",
   [string]$InnoCompiler = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
 )
@@ -24,11 +26,27 @@ Write-Host "Building Euro Tech Billing $Version+$BuildNumber"
 Invoke-Checked $Flutter @("pub", "get")
 Invoke-Checked $Flutter @("analyze")
 Invoke-Checked $Flutter @("test")
-Invoke-Checked $Flutter @("build", "windows", "--release", "--build-name", $Version, "--build-number", $BuildNumber)
+Invoke-Checked $Flutter @(
+  "build", "windows", "--release",
+  "--build-name", $Version,
+  "--build-number", $BuildNumber,
+  "--dart-define=APP_BUILD_SHA=$SourceRevision",
+  "--dart-define=APP_BUILD_RUN=$PipelineRun"
+)
 
-$Executable = Join-Path $ProjectRoot "build\windows\x64\runner\Release\EuroTechBilling.exe"
-if (-not (Test-Path $Executable)) {
-  throw "Windows release executable was not produced at $Executable"
+$ReleaseDirectory = Join-Path $ProjectRoot "build\windows\x64\runner\Release"
+$RequiredReleaseFiles = @(
+  "EuroTechBilling.exe",
+  "flutter_windows.dll",
+  "data\app.so",
+  "data\flutter_assets",
+  "sqlite3.dll"
+)
+foreach ($ReleaseFile in $RequiredReleaseFiles) {
+  $ReleasePath = Join-Path $ReleaseDirectory $ReleaseFile
+  if (-not (Test-Path $ReleasePath)) {
+    throw "Required Windows release component was not produced at $ReleasePath"
+  }
 }
 if (-not (Test-Path $InnoCompiler)) {
   throw "Inno Setup 6 was not found. Install it or pass -InnoCompiler with the ISCC.exe path."
