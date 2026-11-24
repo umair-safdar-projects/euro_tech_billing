@@ -1,6 +1,6 @@
 param(
-  [string]$Version = "1.0.1",
-  [string]$BuildNumber = "2",
+  [string]$Version = "1.0.2",
+  [string]$BuildNumber = "3",
   [string]$SourceRevision = "local",
   [string]$PipelineRun = "local",
   [string]$Flutter = "flutter",
@@ -38,6 +38,9 @@ $ReleaseDirectory = Join-Path $ProjectRoot "build\windows\x64\runner\Release"
 $RequiredReleaseFiles = @(
   "EuroTechBilling.exe",
   "flutter_windows.dll",
+  "printing_plugin.dll",
+  "pdfium.dll",
+  "file_selector_windows_plugin.dll",
   "data\app.so",
   "data\flutter_assets",
   "sqlite3.dll"

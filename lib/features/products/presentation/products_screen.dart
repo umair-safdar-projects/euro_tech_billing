@@ -63,6 +63,7 @@ class ProductsScreen extends GetView<ProductsController> {
   }
 
   DataRow _row(BuildContext context, Product product) => DataRow(
+    key: ValueKey(product.id),
     cells: [
       DataCell(
         Text(product.name, style: const TextStyle(fontWeight: FontWeight.w600)),
@@ -78,7 +79,9 @@ class ProductsScreen extends GetView<ProductsController> {
       DataCell(
         Switch(
           value: product.isActive,
-          onChanged: (value) => controller.setActive(product, value),
+          onChanged: controller.isUpdatingStatus.value
+              ? null
+              : (value) => controller.setActive(product.id, value),
         ),
       ),
       DataCell(

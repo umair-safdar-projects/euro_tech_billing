@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:eurotechbilling/core/database/app_database.dart';
 import 'package:eurotechbilling/features/invoices/data/invoice_repository.dart';
@@ -11,13 +10,64 @@ import 'package:eurotechbilling/features/printing/domain/printing_models.dart';
 import 'package:eurotechbilling/features/printing/services/invoice_pdf_service.dart';
 import 'package:eurotechbilling/features/settings/data/company_settings_repository.dart';
 import 'package:eurotechbilling/features/settings/domain/company_settings.dart';
+import 'package:eurotechbilling/features/invoices/presentation/invoice_detail_view.dart';
+import 'package:eurotechbilling/features/payments/data/payment_repository.dart';
+import 'package:eurotechbilling/features/printing/services/invoice_printing_service.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
+import 'package:printing/printing.dart';
 import 'package:path/path.dart' as p;
 import 'package:pdf/pdf.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {
   final service = InvoicePdfService();
+
+  testWidgets('invoice detail routes preview, print and export separately', (
+    tester,
+  ) async {
+    const channel = MethodChannel('net.nfet.printing');
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(channel, (_) async => <String, bool>{});
+    addTearDown(() {
+      messenger.setMockMethodCallHandler(channel, null);
+      Get.reset();
+    });
+
+    final model = _model(paid: 35000, status: 'paid');
+    final printing = _RecordingPrintingService(model);
+    final database = AppDatabase.forTesting(
+      factory: databaseFactoryFfi,
+      databasePath: inMemoryDatabasePath,
+    );
+    Get.put(CompanySettingsRepository(database));
+    Get.put(PaymentRepository(database));
+    Get.put<InvoicePrintingService>(printing);
+
+    await tester.pumpWidget(
+      GetMaterialApp(home: InvoiceDetailDialog(detail: model.invoice)),
+    );
+
+    await tester.tap(find.byTooltip('Print Invoice'));
+    await tester.pump();
+    expect(printing.calls, ['print:321']);
+    expect(find.byType(PdfPreview), findsNothing);
+
+    await tester.tap(find.byTooltip('Export PDF'));
+    await tester.pump();
+    expect(printing.calls, ['print:321', 'export:321']);
+
+    await tester.tap(find.byTooltip('Preview Invoice'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(printing.calls, ['print:321', 'export:321', 'preview:321']);
+    expect(find.byType(PdfPreview), findsOneWidget);
+    final preview = tester.widget<PdfPreview>(find.byType(PdfPreview));
+    expect(preview.allowPrinting, isFalse);
+    expect(preview.allowSharing, isFalse);
+  });
 
   test('A5 output uses genuine 148 x 210 mm page dimensions', () async {
     final layout = service.layoutFor(const PrintingSettings());
@@ -50,17 +100,31 @@ void main() {
     expect(centered.left, greaterThan(topLeft.left));
   });
 
-  test('A4 PDF pages use A4 media boxes for both placements', () async {
+  test('multipage A4 invoices use A4 media boxes in both placements', () async {
+    final items = List.generate(
+      50,
+      (index) => InvoiceDetailItem(
+        description: 'Test service ${index + 1}',
+        quantity: 1,
+        unit: 'piece',
+        unitPriceMinor: 35000,
+        lineTotalMinor: 35000,
+      ),
+    );
     for (final placement in A4Placement.values) {
       final bytes = await service.generate(
         _model(
+          items: items,
           settings: PrintingSettings(
             paper: InvoicePaper.a4,
             a4Placement: placement,
           ),
         ),
       );
-      for (final box in _mediaBoxes(bytes)) {
+      final boxes = _mediaBoxes(bytes);
+      expect(boxes.length, greaterThan(1));
+      expect(boxes.length, _pageCount(bytes));
+      for (final box in boxes) {
         expect(box.$1, closeTo(PdfPageFormat.a4.width, .1));
         expect(box.$2, closeTo(PdfPageFormat.a4.height, .1));
       }
@@ -241,6 +305,31 @@ void main() {
       await directory.delete(recursive: true);
     },
   );
+}
+
+class _RecordingPrintingService implements InvoicePrintingService {
+  _RecordingPrintingService(this.model);
+
+  final InvoicePrintModel model;
+  final calls = <String>[];
+
+  @override
+  Future<(InvoicePrintModel, Uint8List)> generate(int invoiceId) async {
+    calls.add('preview:$invoiceId');
+    return (model, Uint8List(0));
+  }
+
+  @override
+  Future<bool> printInvoice(int invoiceId) async {
+    calls.add('print:$invoiceId');
+    return true;
+  }
+
+  @override
+  Future<String?> exportPdf(int invoiceId) async {
+    calls.add('export:$invoiceId');
+    return null;
+  }
 }
 
 InvoicePrintModel _model({

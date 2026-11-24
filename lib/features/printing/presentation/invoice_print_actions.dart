@@ -43,8 +43,8 @@ Future<void> showInvoicePreview(BuildContext context, int invoiceId) async {
                   canChangePageFormat: false,
                   canChangeOrientation: false,
                   canDebug: false,
-                  allowPrinting: true,
-                  allowSharing: true,
+                  allowPrinting: false,
+                  allowSharing: false,
                   dynamicLayout: false,
                 ),
               ),
@@ -58,19 +58,14 @@ Future<void> showInvoicePreview(BuildContext context, int invoiceId) async {
   }
 }
 
-Future<void> printInvoice(BuildContext context, int invoiceId) async {
+Future<void> printInvoice(int invoiceId) async {
   try {
     final service = Get.find<InvoicePrintingService>();
-    final generated = await service.generate(invoiceId);
-    if (generated.$1.settings.previewBeforePrinting) {
-      if (context.mounted) await showInvoicePreview(context, invoiceId);
-      return;
-    }
     final accepted = await service.printInvoice(invoiceId);
     if (!accepted) {
       Get.snackbar(
-        'Printing cancelled',
-        'No print job was submitted.',
+        'Print job not submitted',
+        'If you did not cancel, check that an installed printer is available.',
         snackPosition: SnackPosition.BOTTOM,
         margin: const EdgeInsets.all(20),
       );

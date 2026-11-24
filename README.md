@@ -28,7 +28,7 @@ flutter build windows
 On Windows, the reproducible release and Inno Setup package are built with:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\build_windows_release.ps1 -Version 1.0.1 -BuildNumber 2
+powershell -ExecutionPolicy Bypass -File scripts\build_windows_release.ps1 -Version 1.0.2 -BuildNumber 3
 ```
 
 Tests use isolated temporary SQLite databases and do not touch operator data.

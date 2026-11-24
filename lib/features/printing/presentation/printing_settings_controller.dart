@@ -9,7 +9,6 @@ class PrintingSettingsController extends GetxController {
   final PrintingSettingsRepository _repository;
   final paper = InvoicePaper.a5.obs;
   final placement = A4Placement.centered.obs;
-  final previewBeforePrinting = true.obs;
   final footer = TextEditingController();
   final isLoading = true.obs;
   final isSaving = false.obs;
@@ -26,7 +25,6 @@ class PrintingSettingsController extends GetxController {
       final value = await _repository.load();
       paper.value = value.paper;
       placement.value = value.a4Placement;
-      previewBeforePrinting.value = value.previewBeforePrinting;
       footer.text = value.footerMessage;
     } finally {
       isLoading.value = false;
@@ -41,12 +39,11 @@ class PrintingSettingsController extends GetxController {
           paper: paper.value,
           a4Placement: placement.value,
           footerMessage: footer.text,
-          previewBeforePrinting: previewBeforePrinting.value,
         ),
       );
       Get.snackbar(
         'Printing settings saved',
-        'New previews and exports will use these preferences.',
+        'New previews, print jobs, and exports will use these preferences.',
         snackPosition: SnackPosition.BOTTOM,
         margin: const EdgeInsets.all(20),
       );

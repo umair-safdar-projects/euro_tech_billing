@@ -14,13 +14,13 @@ Select A4 paper in the system print dialog. Printer-driver scaling should remain
 
 ## Preview, printing, and export
 
-Invoice Details provides Preview Invoice, Print Invoice, and Export PDF actions. Invoice History provides a direct preview/reprint shortcut, and the successful save notification offers immediate preview.
+Invoice Details provides Preview Invoice, Print Invoice, and Export PDF actions. Invoice History provides direct preview and print shortcuts, and the successful save notification offers immediate preview.
 
 Preview uses the `printing` package PDF viewer. Printing opens the operating system workflow so the operator can select an installed printer; the application never silently sends a job. Cancelling does not change invoice or payment data. Export opens a native save-location chooser and writes to the selected path.
 
 ## Settings
 
-Settings → Printing Settings stores the default paper, A4 placement, footer message, and preview-before-printing preference in `app_settings`. The company logo path is stored with company settings. Missing, unreadable, or corrupt images fall back to text branding without preventing generation.
+Settings → Printing Settings stores the default paper, A4 placement, and footer message in `app_settings`. The company logo path is stored with company settings. Missing, unreadable, or corrupt images fall back to text branding without preventing generation.
 
 ## Historical behavior
 

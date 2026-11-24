@@ -21,6 +21,7 @@ class InvoicePrintingService {
     final result = await generate(invoiceId);
     return Printing.layoutPdf(
       name: 'Invoice ${result.$1.invoice.invoiceNumber}',
+      format: _pdf.layoutFor(result.$1.settings).pageFormat,
       dynamicLayout: false,
       onLayout: (_) async => result.$2,
     );

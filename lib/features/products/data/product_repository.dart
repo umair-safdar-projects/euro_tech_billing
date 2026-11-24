@@ -9,7 +9,7 @@ class ProductRepository {
   Future<List<Product>> getAll() async {
     final rows = await _appDatabase.database.query(
       'products',
-      orderBy: 'is_active DESC, id ASC',
+      orderBy: 'id ASC',
     );
     return rows.map(Product.fromMap).toList(growable: false);
   }

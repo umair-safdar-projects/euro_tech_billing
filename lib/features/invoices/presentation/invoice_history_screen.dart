@@ -132,15 +132,29 @@ class InvoiceHistoryScreen extends GetView<InvoiceHistoryController> {
                                         _StatusLabel(invoice.paymentStatus),
                                       ),
                                       DataCell(
-                                        IconButton(
-                                          tooltip: 'Preview invoice',
-                                          onPressed: () => showInvoicePreview(
-                                            context,
-                                            invoice.id,
-                                          ),
-                                          icon: const Icon(
-                                            Icons.preview_rounded,
-                                          ),
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            IconButton(
+                                              tooltip: 'Preview Invoice',
+                                              onPressed: () =>
+                                                  showInvoicePreview(
+                                                    context,
+                                                    invoice.id,
+                                                  ),
+                                              icon: const Icon(
+                                                Icons.preview_rounded,
+                                              ),
+                                            ),
+                                            IconButton(
+                                              tooltip: 'Print Invoice',
+                                              onPressed: () =>
+                                                  printInvoice(invoice.id),
+                                              icon: const Icon(
+                                                Icons.print_rounded,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ],

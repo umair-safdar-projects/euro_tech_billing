@@ -106,17 +106,6 @@ class PrintingSettingsCard extends GetView<PrintingSettingsController> {
                 labelText: 'Invoice footer message',
               ),
             ),
-            const SizedBox(height: 8),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              value: controller.previewBeforePrinting.value,
-              title: const Text('Preview before printing'),
-              subtitle: const Text(
-                'Recommended: review the document before opening the system print workflow.',
-              ),
-              onChanged: (value) =>
-                  controller.previewBeforePrinting.value = value,
-            ),
           ],
         ),
       ),

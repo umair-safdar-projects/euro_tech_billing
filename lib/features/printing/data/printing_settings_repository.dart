@@ -9,13 +9,12 @@ class PrintingSettingsRepository {
   static const _paperKey = 'printing.paper';
   static const _placementKey = 'printing.a4_placement';
   static const _footerKey = 'printing.footer';
-  static const _previewKey = 'printing.preview_before_print';
 
   Future<PrintingSettings> load() async {
     final rows = await _appDatabase.database.query(
       'app_settings',
-      where: 'key IN (?, ?, ?, ?)',
-      whereArgs: [_paperKey, _placementKey, _footerKey, _previewKey],
+      where: 'key IN (?, ?, ?)',
+      whereArgs: [_paperKey, _placementKey, _footerKey],
     );
     final values = {
       for (final row in rows) row['key']! as String: row['value']! as String,
@@ -26,7 +25,6 @@ class PrintingSettingsRepository {
           ? A4Placement.topLeft
           : A4Placement.centered,
       footerMessage: values[_footerKey] ?? 'Thank you for your business!',
-      previewBeforePrinting: values[_previewKey] != 'false',
     );
   }
 
@@ -39,7 +37,6 @@ class PrintingSettingsRepository {
               ? 'top_left'
               : 'centered',
           _footerKey: settings.footerMessage.trim(),
-          _previewKey: settings.previewBeforePrinting.toString(),
         };
         for (final entry in values.entries) {
           await transaction.insert('app_settings', {

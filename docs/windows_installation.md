@@ -12,10 +12,10 @@ From the project root, run:
 
 ```powershell
 flutter doctor -v
-powershell -ExecutionPolicy Bypass -File scripts\build_windows_release.ps1 -Version 1.0.1 -BuildNumber 2
+powershell -ExecutionPolicy Bypass -File scripts\build_windows_release.ps1 -Version 1.0.2 -BuildNumber 3
 ```
 
-The script runs dependency resolution, analysis, all tests, `flutter build windows --release`, verifies the executable and required runtime bundle, and invokes Inno Setup. The installer is written to `dist\EuroTechBilling-Setup-1.0.1.exe`.
+The script runs dependency resolution, analysis, all tests, `flutter build windows --release`, verifies the executable and required runtime bundle, and invokes Inno Setup. The installer is written to `dist\EuroTechBilling-Setup-1.0.2.exe`.
 
 The current clean ET icon is a temporary vector-led brand asset. To replace it, update `assets\branding\euro_tech_icon.svg` and its 256-pixel PNG render, then run `dart run tool\generate_app_icon.dart`. That command rebuilds the multi-resolution Windows `.ico`; verify all sizes in Explorer before release.
 
@@ -25,13 +25,13 @@ Equivalent manual commands:
 flutter pub get
 flutter analyze
 flutter test
-flutter build windows --release --build-name 1.0.1 --build-number 2 --dart-define=APP_BUILD_SHA=local --dart-define=APP_BUILD_RUN=local
-"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion=1.0.1 installer\euro_tech_billing.iss
+flutter build windows --release --build-name 1.0.2 --build-number 3 --dart-define=APP_BUILD_SHA=local --dart-define=APP_BUILD_RUN=local
+"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion=1.0.2 installer\euro_tech_billing.iss
 ```
 
 ## Shop installation
 
-1. Copy the installer to the shop computer and scan it with Windows Security.
+1. Copy the installer to the shop computer and scan it with Windows Security. Setup checks for the Microsoft Visual C++ v14 x64 runtime (14.44 or newer). If prompted, install the [official Microsoft x64 redistributable](https://aka.ms/vc14/vc_redist.x64.exe), restart if it asks, then rerun Setup. The runtime installer can also be transferred to an offline shop computer.
 2. Run as an administrator and accept the default Program Files destination.
 3. Select the optional desktop shortcut if desired; the Start-menu shortcut is automatic.
 4. Launch the application, verify company settings, choose a backup folder outside Program Files, and create a manual backup.

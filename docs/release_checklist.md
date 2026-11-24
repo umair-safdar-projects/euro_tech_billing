@@ -5,9 +5,9 @@
 - [ ] `dart format lib test tool` produces no changes.
 - [ ] `flutter analyze` reports no issues.
 - [ ] `flutter test` passes, including backup/restore and PDF tests.
-- [ ] `flutter build windows --release --build-name 1.0.1 --build-number 2` succeeds on Windows.
+- [ ] `flutter build windows --release --build-name 1.0.2 --build-number 3` succeeds on Windows.
 - [ ] The release bundle contains the executable, Flutter runtime, `app.so`, assets, and SQLite runtime.
-- [ ] Inno Setup creates `dist\EuroTechBilling-Setup-1.0.1.exe`.
+- [ ] Inno Setup creates `dist\EuroTechBilling-Setup-1.0.2.exe`.
 - [ ] Installer and executable version metadata, name, and icon are correct.
 
 ## Upgrade and data safety

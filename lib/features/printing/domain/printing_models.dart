@@ -12,13 +12,11 @@ class PrintingSettings {
     this.paper = InvoicePaper.a5,
     this.a4Placement = A4Placement.centered,
     this.footerMessage = 'Thank you for your business!',
-    this.previewBeforePrinting = true,
   });
 
   final InvoicePaper paper;
   final A4Placement a4Placement;
   final String footerMessage;
-  final bool previewBeforePrinting;
 }
 
 class InvoicePrintModel {

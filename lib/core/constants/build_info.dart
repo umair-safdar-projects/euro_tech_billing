@@ -1,6 +1,6 @@
 abstract final class BuildInfo {
-  static const version = '1.0.1';
-  static const buildNumber = '2';
+  static const version = '1.0.2';
+  static const buildNumber = '3';
   static const sourceRevision = String.fromEnvironment(
     'APP_BUILD_SHA',
     defaultValue: 'local',

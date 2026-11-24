@@ -57,7 +57,7 @@ class InvoiceDetailDialog extends StatelessWidget {
                   ),
                   IconButton(
                     tooltip: 'Print Invoice',
-                    onPressed: () => printInvoice(context, detail.id),
+                    onPressed: () => printInvoice(detail.id),
                     icon: const Icon(Icons.print_rounded),
                   ),
                   IconButton(

@@ -48,8 +48,8 @@ jobs:
       - name: Build Windows release
         run: >-
           flutter build windows --release
-          --build-name 1.0.1
-          --build-number 2
+          --build-name 1.0.2
+          --build-number 3
           --dart-define=APP_BUILD_SHA=${{ github.sha }}
           --dart-define=APP_BUILD_RUN=${{ github.run_number }}
 
@@ -60,6 +60,9 @@ jobs:
           $required = @(
             "EuroTechBilling.exe",
             "flutter_windows.dll",
+            "printing_plugin.dll",
+            "pdfium.dll",
+            "file_selector_windows_plugin.dll",
             "data\app.so",
             "data\flutter_assets",
             "sqlite3.dll"
@@ -80,7 +83,7 @@ jobs:
             throw "Inno Setup 6 compiler not found: $iscc"
           }
 
-          & $iscc /DMyAppVersion=1.0.1 installer\euro_tech_billing.iss
+          & $iscc /DMyAppVersion=1.0.2 installer\euro_tech_billing.iss
 
           if ($LASTEXITCODE -ne 0) {
             throw "Installer compilation failed."
@@ -89,7 +92,7 @@ jobs:
       - name: Verify installer
         shell: pwsh
         run: |
-          $installer = "dist\EuroTechBilling-Setup-1.0.1.exe"
+          $installer = "dist\EuroTechBilling-Setup-1.0.2.exe"
 
           if (-not (Test-Path $installer)) {
             throw "Expected installer not found: $installer"
@@ -104,6 +107,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: EuroTechBilling-Windows-Installer-${{ github.run_number }}-${{ github.sha }}
-          path: dist/EuroTechBilling-Setup-1.0.1.exe
+          path: dist/EuroTechBilling-Setup-1.0.2.exe
           if-no-files-found: error
           retention-days: 7

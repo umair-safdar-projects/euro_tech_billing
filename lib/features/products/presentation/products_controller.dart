@@ -11,6 +11,7 @@ class ProductsController extends GetxController {
   final products = <Product>[].obs;
   final isLoading = true.obs;
   final errorMessage = RxnString();
+  final isUpdatingStatus = false.obs;
 
   @override
   void onInit() {
@@ -39,12 +40,16 @@ class ProductsController extends GetxController {
     await load();
   }
 
-  Future<void> setActive(Product product, bool active) async {
+  Future<void> setActive(int productId, bool active) async {
+    if (isLoading.value || isUpdatingStatus.value) return;
+    isUpdatingStatus.value = true;
     try {
-      await _repository.setActive(product.id, active);
+      await _repository.setActive(productId, active);
       await load();
     } catch (error) {
       Get.snackbar('Unable to update product', error.toString());
+    } finally {
+      isUpdatingStatus.value = false;
     }
   }
 
