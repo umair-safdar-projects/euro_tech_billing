@@ -138,26 +138,40 @@ class PaymentsCreditScreen extends GetView<PaymentsCreditController> {
 
   Widget _payments(BuildContext context) => Column(
     children: [
-      Row(
-        children: [
-          Expanded(
-            child: TextField(
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search_rounded),
-                hintText: 'Customer or invoice number',
-              ),
-              textInputAction: TextInputAction.search,
-              onChanged: (value) => controller.search.value = value,
-              onSubmitted: (_) => controller.refreshAll(targetPage: 1),
+      LayoutBuilder(
+        builder: (context, constraints) {
+          final search = TextField(
+            decoration: const InputDecoration(
+              prefixIcon: Icon(Icons.search_rounded),
+              hintText: 'Customer or invoice number',
             ),
-          ),
-          const SizedBox(width: 12),
-          OutlinedButton.icon(
+            textInputAction: TextInputAction.search,
+            onChanged: (value) => controller.search.value = value,
+            onSubmitted: (_) => controller.refreshAll(targetPage: 1),
+          );
+          final dates = OutlinedButton.icon(
             onPressed: () => _pickDates(context),
             icon: const Icon(Icons.date_range_rounded),
             label: const Text('Date range'),
-          ),
-        ],
+          );
+          if (constraints.maxWidth < 600) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                search,
+                const SizedBox(height: 10),
+                Align(alignment: Alignment.centerLeft, child: dates),
+              ],
+            );
+          }
+          return Row(
+            children: [
+              Expanded(child: search),
+              const SizedBox(width: 12),
+              dates,
+            ],
+          );
+        },
       ),
       const SizedBox(height: 12),
       Align(

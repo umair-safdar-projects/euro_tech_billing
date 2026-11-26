@@ -472,13 +472,21 @@ class InvoicePdfService {
   }
 
   String _contacts(InvoicePrintModel model) {
-    final values = [
-      model.company.primaryPhone,
-      model.company.secondaryPhone,
-      model.company.additionalContactPhone,
-    ].where((value) => value.trim().isNotEmpty);
+    final owner = model.company.ownerName.trim();
+    final additionalContact = model.company.additionalContactName.trim();
+    final values = <String>[
+      if (model.company.primaryPhone.trim().isNotEmpty)
+        _labeledPhone(owner, model.company.primaryPhone),
+      if (model.company.secondaryPhone.trim().isNotEmpty)
+        _labeledPhone(owner, model.company.secondaryPhone),
+      if (model.company.additionalContactPhone.trim().isNotEmpty)
+        _labeledPhone(additionalContact, model.company.additionalContactPhone),
+    ];
     return values.join(' | ');
   }
+
+  String _labeledPhone(String label, String phone) =>
+      label.isEmpty ? phone.trim() : '$label: ${phone.trim()}';
 
   String _money(int minor) {
     final whole = NumberFormat('#,##0', 'en_US').format(minor ~/ 100);

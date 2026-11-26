@@ -229,34 +229,81 @@ class ReportsScreen extends GetView<ReportsController> {
               ),
             )
           else
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                columns: [
-                  const DataColumn(label: Text('Name')),
-                  DataColumn(label: Text(countLabel), numeric: true),
-                  const DataColumn(label: Text('Amount'), numeric: true),
-                ],
-                rows: rows
-                    .map(
-                      (row) => DataRow(
-                        cells: [
-                          DataCell(
-                            SizedBox(
-                              width: 250,
-                              child: Text(
-                                row.name,
-                                overflow: TextOverflow.ellipsis,
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = constraints.maxWidth < 520;
+                final columnSpacing = compact ? 10.0 : 18.0;
+                final countWidth = compact ? 58.0 : 76.0;
+                final amountWidth = compact ? 86.0 : 104.0;
+                final nameWidth =
+                    (constraints.maxWidth -
+                            countWidth -
+                            amountWidth -
+                            (columnSpacing * 2))
+                        .clamp(90.0, double.infinity);
+                return DataTable(
+                  horizontalMargin: 0,
+                  columnSpacing: columnSpacing,
+                  columns: [
+                    DataColumn(
+                      label: SizedBox(
+                        width: nameWidth,
+                        child: const Text('Name'),
+                      ),
+                    ),
+                    DataColumn(
+                      label: SizedBox(
+                        width: countWidth,
+                        child: Text(countLabel),
+                      ),
+                      numeric: true,
+                    ),
+                    DataColumn(
+                      label: SizedBox(
+                        width: amountWidth,
+                        child: const Text('Amount'),
+                      ),
+                      numeric: true,
+                    ),
+                  ],
+                  rows: rows
+                      .map(
+                        (row) => DataRow(
+                          cells: [
+                            DataCell(
+                              SizedBox(
+                                width: nameWidth,
+                                child: Text(
+                                  row.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                             ),
-                          ),
-                          DataCell(Text('${row.count}')),
-                          DataCell(Text(Currency.formatMinor(row.amountMinor))),
-                        ],
-                      ),
-                    )
-                    .toList(),
-              ),
+                            DataCell(
+                              SizedBox(
+                                width: countWidth,
+                                child: Text(row.count.toString()),
+                              ),
+                            ),
+                            DataCell(
+                              SizedBox(
+                                width: amountWidth,
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    Currency.formatMinor(row.amountMinor),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                      .toList(),
+                );
+              },
             ),
         ],
       ),

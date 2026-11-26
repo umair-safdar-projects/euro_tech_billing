@@ -115,20 +115,17 @@ class SettingsScreen extends GetView<SettingsController> {
                       maxLines: 3,
                     ),
                     const SizedBox(height: 18),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Obx(
-                            () => Text(
-                              controller.logoPath.value?.isNotEmpty ?? false
-                                  ? controller.logoPath.value!
-                                  : 'No company logo selected',
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final path = Obx(
+                          () => Text(
+                            controller.logoPath.value?.isNotEmpty ?? false
+                                ? controller.logoPath.value!
+                                : 'No company logo selected',
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        OutlinedButton.icon(
+                        );
+                        final choose = OutlinedButton.icon(
                           onPressed: () async {
                             final file = await openFile(
                               acceptedTypeGroups: const [
@@ -144,14 +141,35 @@ class SettingsScreen extends GetView<SettingsController> {
                           },
                           icon: const Icon(Icons.image_outlined),
                           label: const Text('Choose logo'),
-                        ),
-                        if (controller.logoPath.value?.isNotEmpty ?? false)
-                          IconButton(
-                            tooltip: 'Remove logo',
-                            onPressed: () => controller.logoPath.value = null,
-                            icon: const Icon(Icons.close_rounded),
-                          ),
-                      ],
+                        );
+                        final remove =
+                            controller.logoPath.value?.isNotEmpty ?? false
+                            ? IconButton(
+                                tooltip: 'Remove logo',
+                                onPressed: () =>
+                                    controller.logoPath.value = null,
+                                icon: const Icon(Icons.close_rounded),
+                              )
+                            : null;
+                        if (constraints.maxWidth < 600) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              path,
+                              const SizedBox(height: 10),
+                              Wrap(spacing: 8, children: [choose, ?remove]),
+                            ],
+                          );
+                        }
+                        return Row(
+                          children: [
+                            Expanded(child: path),
+                            const SizedBox(width: 12),
+                            choose,
+                            ?remove,
+                          ],
+                        );
+                      },
                     ),
                   ],
                 ),

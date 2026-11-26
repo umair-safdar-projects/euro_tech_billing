@@ -128,6 +128,10 @@ class AppShell extends GetView<ShellController> {
       }
     }
     controller.select(index);
+    if (index == ShellDestination.newInvoice.index &&
+        Get.isRegistered<InvoiceEditorController>()) {
+      await Get.find<InvoiceEditorController>().loadLookups();
+    }
   }
 }
 
