@@ -17,7 +17,7 @@ powershell -ExecutionPolicy Bypass -File scripts\build_windows_release.ps1 -Vers
 
 The script runs dependency resolution, analysis, all tests, `flutter build windows --release`, verifies the executable and required runtime bundle, and invokes Inno Setup. The installer is written to `dist\EuroTechBilling-Setup-1.0.2.exe`.
 
-The current clean ET icon is a temporary vector-led brand asset. To replace it, update `assets\branding\euro_tech_icon.svg` and its 256-pixel PNG render, then run `dart run tool\generate_app_icon.dart`. That command rebuilds the multi-resolution Windows `.ico`; verify all sizes in Explorer before release.
+The Windows application and installer use the supplied Euro Tech company mark. The source artwork is kept at `assets\branding\euro_tech_logo.png`; `dart run tool\generate_app_icon.dart` crops the symbol for small Windows icon sizes, applies the deep-navy/gold brand treatment, updates the 256-pixel preview, and rebuilds the multi-resolution `windows\runner\resources\app_icon.ico`.
 
 Equivalent manual commands:
 
