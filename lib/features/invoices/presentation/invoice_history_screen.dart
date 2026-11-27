@@ -4,6 +4,10 @@ import 'package:intl/intl.dart';
 
 import '../../../core/utils/currency.dart';
 import '../../../core/widgets/page_header.dart';
+import '../../shell/domain/shell_destination.dart';
+import '../../shell/presentation/shell_controller.dart';
+import '../data/invoice_repository.dart';
+import 'invoice_editor_controller.dart';
 import 'invoice_detail_view.dart';
 import 'invoice_history_controller.dart';
 import '../../printing/presentation/invoice_print_actions.dart';
@@ -20,7 +24,8 @@ class InvoiceHistoryScreen extends GetView<InvoiceHistoryController> {
         children: [
           const PageHeader(
             title: 'Invoice History',
-            subtitle: 'Search and review finalized invoices.',
+            subtitle:
+                'Search and review invoices. Select a checkbox to edit or delete an unpaid invoice.',
           ),
           const SizedBox(height: 24),
           LayoutBuilder(
@@ -73,6 +78,69 @@ class InvoiceHistoryScreen extends GetView<InvoiceHistoryController> {
             },
           ),
           const SizedBox(height: 18),
+          Obx(() {
+            final invoice = controller.selectedInvoice;
+            if (invoice == null) return const SizedBox.shrink();
+            final canModify = invoice.paymentStatus == 'unpaid';
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 18),
+              child: Card(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 12,
+                  ),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final message = Expanded(
+                        child: Text(
+                          canModify
+                              ? '${invoice.invoiceNumber} selected. You can edit or delete this unpaid invoice.'
+                              : '${invoice.invoiceNumber} is ${invoice.paymentStatus.replaceAll('_', ' ')}. Paid or partially paid invoices cannot be edited or deleted.',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      );
+                      final actions = Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: canModify
+                                ? () => _editSelected(context, invoice.id)
+                                : null,
+                            icon: const Icon(Icons.edit_outlined),
+                            label: const Text('Edit invoice'),
+                          ),
+                          FilledButton.icon(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: Colors.red,
+                            ),
+                            onPressed: canModify
+                                ? () => _deleteSelected(context, invoice.id)
+                                : null,
+                            icon: const Icon(Icons.delete_outline_rounded),
+                            label: const Text('Delete invoice'),
+                          ),
+                        ],
+                      );
+                      if (constraints.maxWidth < 650) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            message,
+                            const SizedBox(height: 10),
+                            actions,
+                          ],
+                        );
+                      }
+                      return Row(children: [message, actions]);
+                    },
+                  ),
+                ),
+              ),
+            );
+          }),
           Expanded(
             child: Card(
               child: Obx(() {
@@ -91,6 +159,7 @@ class InvoiceHistoryScreen extends GetView<InvoiceHistoryController> {
                         child: SizedBox(
                           width: double.infinity,
                           child: DataTable(
+                            showCheckboxColumn: true,
                             columns: const [
                               DataColumn(label: Text('INVOICE')),
                               DataColumn(label: Text('DATE')),
@@ -102,8 +171,14 @@ class InvoiceHistoryScreen extends GetView<InvoiceHistoryController> {
                             rows: controller.invoices
                                 .map(
                                   (invoice) => DataRow(
-                                    onSelectChanged: (_) =>
-                                        _openDetail(context, invoice.id),
+                                    selected:
+                                        controller.selectedInvoiceId.value ==
+                                        invoice.id,
+                                    onSelectChanged: (selected) =>
+                                        controller.selectInvoice(
+                                          invoice.id,
+                                          selected ?? false,
+                                        ),
                                     cells: [
                                       DataCell(
                                         Text(
@@ -112,6 +187,8 @@ class InvoiceHistoryScreen extends GetView<InvoiceHistoryController> {
                                             fontWeight: FontWeight.w700,
                                           ),
                                         ),
+                                        onTap: () =>
+                                            _openDetail(context, invoice.id),
                                       ),
                                       DataCell(
                                         Text(
@@ -235,6 +312,73 @@ class InvoiceHistoryScreen extends GetView<InvoiceHistoryController> {
         builder: (_) => InvoiceDetailDialog(detail: detail),
       );
       await controller.load();
+    }
+  }
+
+  Future<void> _editSelected(BuildContext context, int id) async {
+    final detail = await controller.detail(id);
+    if (detail == null) return;
+    try {
+      await Get.find<InvoiceEditorController>().prepareForEdit(detail);
+      controller.clearSelection();
+      if (context.mounted) {
+        Get.find<ShellController>().select(ShellDestination.newInvoice.index);
+      }
+    } catch (error) {
+      Get.snackbar(
+        'Unable to edit invoice',
+        error is StateError
+            ? error.toString().replaceFirst('Bad state: ', '')
+            : 'Only unpaid invoices without payments can be edited.',
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(20),
+      );
+    }
+  }
+
+  Future<void> _deleteSelected(BuildContext context, int id) async {
+    final invoice = controller.selectedInvoice;
+    if (invoice == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete this invoice?'),
+        content: Text(
+          'Invoice ${invoice.invoiceNumber} has no recorded payment. Its items will be deleted and the invoice number will not be reused.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Keep invoice'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete invoice'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await Get.find<InvoiceRepository>().deleteUnpaid(id);
+      controller.clearSelection();
+      await controller.load();
+      Get.snackbar(
+        'Invoice deleted',
+        '${invoice.invoiceNumber} was removed. The number will not be reused.',
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(20),
+      );
+    } catch (error) {
+      Get.snackbar(
+        'Invoice was not deleted',
+        error is StateError
+            ? error.toString().replaceFirst('Bad state: ', '')
+            : 'The invoice could not be deleted.',
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(20),
+      );
     }
   }
 }

@@ -3,6 +3,9 @@ import 'dart:io';
 import 'package:eurotechbilling/core/database/app_database.dart';
 import 'package:eurotechbilling/features/products/data/product_repository.dart';
 import 'package:eurotechbilling/features/products/presentation/products_controller.dart';
+import 'package:eurotechbilling/features/invoices/data/invoice_repository.dart';
+import 'package:eurotechbilling/features/invoices/domain/invoice_models.dart';
+import 'package:eurotechbilling/features/invoices/presentation/invoice_history_controller.dart';
 import 'package:eurotechbilling/features/settings/data/company_settings_repository.dart';
 import 'package:eurotechbilling/features/settings/domain/company_settings.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -138,5 +141,36 @@ void main() {
     );
     expect(updated.defaultPriceMinor, 42550);
     expect(updated.requiresCustomPrice, isFalse);
+  });
+
+  test('invoice history selection exposes one clear invoice action target', () {
+    final controller = InvoiceHistoryController(InvoiceRepository(appDatabase));
+    controller.invoices.value = [
+      InvoiceListItem(
+        id: 11,
+        invoiceNumber: 'ET-000011',
+        issueDate: DateTime(2026, 1, 1),
+        customerId: null,
+        customerName: 'Walk-in Customer',
+        grandTotalMinor: 3000,
+        paymentStatus: 'unpaid',
+      ),
+      InvoiceListItem(
+        id: 12,
+        invoiceNumber: 'ET-000012',
+        issueDate: DateTime(2026, 1, 2),
+        customerId: null,
+        customerName: 'Walk-in Customer',
+        grandTotalMinor: 4000,
+        paymentStatus: 'paid',
+      ),
+    ];
+
+    controller.selectInvoice(11, true);
+    expect(controller.selectedInvoice?.invoiceNumber, 'ET-000011');
+    controller.selectInvoice(12, true);
+    expect(controller.selectedInvoice?.invoiceNumber, 'ET-000012');
+    controller.clearSelection();
+    expect(controller.selectedInvoice, isNull);
   });
 }

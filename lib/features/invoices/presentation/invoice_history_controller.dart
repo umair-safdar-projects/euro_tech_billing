@@ -14,6 +14,7 @@ class InvoiceHistoryController extends GetxController {
   final search = ''.obs;
   final from = Rxn<DateTime>();
   final to = Rxn<DateTime>();
+  final selectedInvoiceId = RxnInt();
   static const pageSize = 20;
 
   int get totalPages =>
@@ -38,12 +39,28 @@ class InvoiceHistoryController extends GetxController {
       );
       invoices.assignAll(result.items);
       total.value = result.total;
+      if (selectedInvoiceId.value != null &&
+          !invoices.any((invoice) => invoice.id == selectedInvoiceId.value)) {
+        selectedInvoiceId.value = null;
+      }
     } finally {
       isLoading.value = false;
     }
   }
 
   Future<InvoiceDetail?> detail(int id) => _repository.detail(id);
+
+  InvoiceListItem? get selectedInvoice {
+    final id = selectedInvoiceId.value;
+    if (id == null) return null;
+    return invoices.firstWhereOrNull((invoice) => invoice.id == id);
+  }
+
+  void selectInvoice(int id, bool selected) {
+    selectedInvoiceId.value = selected ? id : null;
+  }
+
+  void clearSelection() => selectedInvoiceId.value = null;
 
   void setRange(DateTimeRangeValue? range) {
     from.value = range?.from;
