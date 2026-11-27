@@ -66,6 +66,34 @@ void main() {
     expect(find.byKey(const ValueKey('probe-screen-0')), findsOneWidget);
   });
 
+  testWidgets(
+    'desktop navigation can collapse and expand without losing selection',
+    (tester) async {
+      final controller = Get.put(ShellController());
+      tester.view.physicalSize = const Size(1366, 768);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        GetMaterialApp(home: AppShell(screens: _probeScreens())),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byTooltip('Collapse navigation'));
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(find.byTooltip('Expand navigation'), findsOneWidget);
+      expect(find.byKey(const ValueKey('nav-reports')), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('nav-reports')));
+      await tester.pump();
+      expect(controller.selected, ShellDestination.reports);
+
+      await tester.tap(find.byTooltip('Expand navigation'));
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(find.byTooltip('Collapse navigation'), findsOneWidget);
+    },
+  );
+
   for (final scale in [1.0, 1.25, 1.5]) {
     testWidgets(
       'every destination opens at 1366x768 and ${(scale * 100).round()}% scaling',

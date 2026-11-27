@@ -4,6 +4,11 @@ import 'package:intl/intl.dart';
 
 import '../../../core/utils/currency.dart';
 import '../../../core/widgets/page_header.dart';
+import '../../customers/presentation/customers_controller.dart';
+import '../../customers/presentation/customers_screen.dart';
+import '../../invoices/presentation/invoice_editor_controller.dart';
+import '../../shell/domain/shell_destination.dart';
+import '../../shell/presentation/shell_controller.dart';
 import 'dashboard_controller.dart';
 
 class DashboardScreen extends GetView<DashboardController> {
@@ -65,6 +70,8 @@ class DashboardScreen extends GetView<DashboardController> {
             ),
           ),
           const SizedBox(height: 24),
+          _quickActions(context),
+          const SizedBox(height: 20),
           LayoutBuilder(
             builder: (context, constraints) {
               final width = constraints.maxWidth > 900
@@ -184,6 +191,60 @@ class DashboardScreen extends GetView<DashboardController> {
       ),
     );
   });
+
+  Widget _quickActions(BuildContext context) => Card(
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Text(
+            'Quick actions',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          FilledButton.icon(
+            onPressed: () => _open(ShellDestination.newInvoice),
+            icon: const Icon(Icons.note_add_rounded),
+            label: const Text('New invoice'),
+          ),
+          OutlinedButton.icon(
+            onPressed: () => _openCustomer(context),
+            icon: const Icon(Icons.person_add_alt_1_rounded),
+            label: const Text('Add customer'),
+          ),
+          OutlinedButton.icon(
+            onPressed: () => _open(ShellDestination.reports),
+            icon: const Icon(Icons.bar_chart_rounded),
+            label: const Text('View reports'),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  Future<void> _open(ShellDestination destination) async {
+    if (!Get.isRegistered<ShellController>()) return;
+    Get.find<ShellController>().selectDestination(destination);
+    if (destination == ShellDestination.newInvoice &&
+        Get.isRegistered<InvoiceEditorController>()) {
+      await Get.find<InvoiceEditorController>().loadLookups();
+    }
+  }
+
+  Future<void> _openCustomer(BuildContext context) async {
+    if (!Get.isRegistered<ShellController>() ||
+        !Get.isRegistered<CustomersController>()) {
+      return;
+    }
+    final customers = Get.find<CustomersController>();
+    Get.find<ShellController>().selectDestination(ShellDestination.customers);
+    await customers.load();
+    if (context.mounted) showCustomerDialog(context, customers);
+  }
 
   Widget _activityCard(
     BuildContext context,

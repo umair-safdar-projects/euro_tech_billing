@@ -232,81 +232,98 @@ class ReportsScreen extends GetView<ReportsController> {
             LayoutBuilder(
               builder: (context, constraints) {
                 final compact = constraints.maxWidth < 520;
-                final columnSpacing = compact ? 10.0 : 18.0;
-                final countWidth = compact ? 58.0 : 76.0;
-                final amountWidth = compact ? 86.0 : 104.0;
-                final nameWidth =
-                    (constraints.maxWidth -
-                            countWidth -
-                            amountWidth -
-                            (columnSpacing * 2))
-                        .clamp(90.0, double.infinity);
-                return DataTable(
-                  horizontalMargin: 0,
-                  columnSpacing: columnSpacing,
-                  columns: [
-                    DataColumn(
-                      label: SizedBox(
-                        width: nameWidth,
-                        child: const Text('Name'),
-                      ),
+                final countWidth = compact ? 64.0 : 88.0;
+                final amountWidth = compact ? 92.0 : 112.0;
+                return Column(
+                  children: [
+                    _reportTableRow(
+                      context,
+                      name: 'Name',
+                      count: countLabel,
+                      amount: 'Amount',
+                      countWidth: countWidth,
+                      amountWidth: amountWidth,
+                      header: true,
                     ),
-                    DataColumn(
-                      label: SizedBox(
-                        width: countWidth,
-                        child: Text(countLabel),
+                    const Divider(height: 18),
+                    for (final row in rows) ...[
+                      _reportTableRow(
+                        context,
+                        name: row.name,
+                        count: row.count.toString(),
+                        amount: Currency.formatMinor(row.amountMinor),
+                        countWidth: countWidth,
+                        amountWidth: amountWidth,
                       ),
-                      numeric: true,
-                    ),
-                    DataColumn(
-                      label: SizedBox(
-                        width: amountWidth,
-                        child: const Text('Amount'),
-                      ),
-                      numeric: true,
-                    ),
+                      if (row != rows.last) const Divider(height: 18),
+                    ],
                   ],
-                  rows: rows
-                      .map(
-                        (row) => DataRow(
-                          cells: [
-                            DataCell(
-                              SizedBox(
-                                width: nameWidth,
-                                child: Text(
-                                  row.name,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ),
-                            DataCell(
-                              SizedBox(
-                                width: countWidth,
-                                child: Text(row.count.toString()),
-                              ),
-                            ),
-                            DataCell(
-                              SizedBox(
-                                width: amountWidth,
-                                child: FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  alignment: Alignment.centerRight,
-                                  child: Text(
-                                    Currency.formatMinor(row.amountMinor),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                      .toList(),
                 );
               },
             ),
         ],
       ),
     ),
+  );
+
+  Widget _reportTableRow(
+    BuildContext context, {
+    required String name,
+    required String count,
+    required String amount,
+    required double countWidth,
+    required double amountWidth,
+    bool header = false,
+  }) => Row(
+    crossAxisAlignment: CrossAxisAlignment.center,
+    children: [
+      Expanded(
+        child: Text(
+          name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: header
+              ? Theme.of(
+                  context,
+                ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700)
+              : null,
+        ),
+      ),
+      SizedBox(
+        width: countWidth,
+        child: Align(
+          alignment: Alignment.centerRight,
+          child: Text(
+            count,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: header
+                ? Theme.of(
+                    context,
+                  ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700)
+                : null,
+          ),
+        ),
+      ),
+      SizedBox(
+        width: amountWidth,
+        child: Align(
+          alignment: Alignment.centerRight,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: Text(
+              amount,
+              maxLines: 1,
+              style: header
+                  ? Theme.of(context).textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    )
+                  : null,
+            ),
+          ),
+        ),
+      ),
+    ],
   );
 }
