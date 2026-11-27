@@ -4,6 +4,7 @@ import 'package:file_selector/file_selector.dart';
 
 import '../../../core/widgets/page_header.dart';
 import '../../../core/constants/build_info.dart';
+import 'license_settings_card.dart';
 import '../../printing/presentation/printing_settings_card.dart';
 import '../../backups/presentation/backup_settings_card.dart';
 import 'settings_controller.dart';
@@ -54,6 +55,8 @@ class SettingsScreen extends GetView<SettingsController> {
               ),
             ),
             const SizedBox(height: 28),
+            const LicenseSettingsCard(),
+            const SizedBox(height: 18),
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(26),

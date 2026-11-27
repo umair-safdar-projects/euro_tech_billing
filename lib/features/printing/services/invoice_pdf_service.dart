@@ -183,7 +183,8 @@ class InvoicePdfService {
                     _contacts(model),
                     style: const pw.TextStyle(fontSize: 6.6, color: _muted),
                   ),
-                  if (model.company.email.trim().isNotEmpty)
+                  if (model.settings.showEmail &&
+                      model.company.email.trim().isNotEmpty)
                     pw.Text(
                       model.company.email.trim(),
                       style: const pw.TextStyle(fontSize: 6.6, color: _muted),

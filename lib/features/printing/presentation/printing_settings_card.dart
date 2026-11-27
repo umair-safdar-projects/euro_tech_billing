@@ -106,6 +106,25 @@ class PrintingSettingsCard extends GetView<PrintingSettingsController> {
                 labelText: 'Invoice footer message',
               ),
             ),
+            const SizedBox(height: 8),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Show company logo'),
+              subtitle: const Text(
+                'Use the configured or built-in Euro Tech logo on invoices.',
+              ),
+              value: controller.showLogo.value,
+              onChanged: (value) => controller.showLogo.value = value,
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Show business email'),
+              subtitle: const Text(
+                'Email is optional and can be hidden from the invoice header.',
+              ),
+              value: controller.showEmail.value,
+              onChanged: (value) => controller.showEmail.value = value,
+            ),
           ],
         ),
       ),

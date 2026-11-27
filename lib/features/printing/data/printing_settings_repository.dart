@@ -9,12 +9,20 @@ class PrintingSettingsRepository {
   static const _paperKey = 'printing.paper';
   static const _placementKey = 'printing.a4_placement';
   static const _footerKey = 'printing.footer';
+  static const _showLogoKey = 'printing.show_logo';
+  static const _showEmailKey = 'printing.show_email';
 
   Future<PrintingSettings> load() async {
     final rows = await _appDatabase.database.query(
       'app_settings',
-      where: 'key IN (?, ?, ?)',
-      whereArgs: [_paperKey, _placementKey, _footerKey],
+      where: 'key IN (?, ?, ?, ?, ?)',
+      whereArgs: [
+        _paperKey,
+        _placementKey,
+        _footerKey,
+        _showLogoKey,
+        _showEmailKey,
+      ],
     );
     final values = {
       for (final row in rows) row['key']! as String: row['value']! as String,
@@ -25,6 +33,8 @@ class PrintingSettingsRepository {
           ? A4Placement.topLeft
           : A4Placement.centered,
       footerMessage: values[_footerKey] ?? 'Thank you for your business!',
+      showLogo: values[_showLogoKey] != 'false',
+      showEmail: values[_showEmailKey] != 'false',
     );
   }
 
@@ -37,6 +47,8 @@ class PrintingSettingsRepository {
               ? 'top_left'
               : 'centered',
           _footerKey: settings.footerMessage.trim(),
+          _showLogoKey: settings.showLogo.toString(),
+          _showEmailKey: settings.showEmail.toString(),
         };
         for (final entry in values.entries) {
           await transaction.insert('app_settings', {

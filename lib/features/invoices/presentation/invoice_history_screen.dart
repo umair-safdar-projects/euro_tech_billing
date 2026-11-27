@@ -234,6 +234,7 @@ class InvoiceHistoryScreen extends GetView<InvoiceHistoryController> {
         context: context,
         builder: (_) => InvoiceDetailDialog(detail: detail),
       );
+      await controller.load();
     }
   }
 }

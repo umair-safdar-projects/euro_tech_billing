@@ -227,6 +227,7 @@ class InvoiceRepository {
     return InvoiceDetail(
       id: row['id']! as int,
       invoiceNumber: row['invoice_number']! as String,
+      customerId: row['customer_id'] as int?,
       issueDate: DateTime.parse(row['issue_date']! as String),
       customerName: row['customer_name']! as String,
       customerPhone: row['customer_phone']! as String,
@@ -255,6 +256,150 @@ class InvoiceRepository {
             ),
       usesLegacyIdentityFallback: row['company_name_snapshot'] == null,
     );
+  }
+
+  Future<void> updateUnpaid(InvoiceUpdateInput input) async {
+    final totals = InvoiceCalculator.calculate(
+      input.items,
+      input.discountMinor,
+    );
+    if (input.customerId == null && totals.grandTotalMinor > 0) {
+      throw const FormatException(
+        'Select a saved customer for an unpaid invoice.',
+      );
+    }
+    await _appDatabase.financialTransaction((transaction) async {
+      final invoiceRows = await transaction.query(
+        'invoices',
+        columns: ['id', 'invoice_number', 'status'],
+        where: 'id = ?',
+        whereArgs: [input.id],
+        limit: 1,
+      );
+      if (invoiceRows.isEmpty) {
+        throw StateError('The invoice no longer exists.');
+      }
+      final invoice = invoiceRows.single;
+      if (invoice['status'] != 'issued') {
+        throw StateError('Only issued invoices can be edited.');
+      }
+      final paymentRows = await transaction.query(
+        'payments',
+        columns: ['id'],
+        where: 'invoice_id = ?',
+        whereArgs: [input.id],
+        limit: 1,
+      );
+      if (paymentRows.isNotEmpty) {
+        throw StateError(
+          'This invoice has payments and cannot be edited. Payment history is immutable.',
+        );
+      }
+
+      Map<String, Object?>? customer;
+      if (input.customerId != null) {
+        final customerRows = await transaction.query(
+          'customers',
+          where: 'id = ?',
+          whereArgs: [input.customerId],
+          limit: 1,
+        );
+        if (customerRows.isEmpty) {
+          throw const FormatException(
+            'The selected customer no longer exists.',
+          );
+        }
+        customer = customerRows.single;
+      }
+      final now = DateTime.now().toUtc().toIso8601String();
+      await transaction.update(
+        'invoices',
+        {
+          'customer_id': input.customerId,
+          'issue_date': input.issueDate.toLocal().toIso8601String(),
+          'subtotal_minor': totals.subtotalMinor,
+          'discount_minor': totals.discountMinor,
+          'grand_total_minor': totals.grandTotalMinor,
+          'customer_name_snapshot': customer?['name'] ?? 'Walk-in Customer',
+          'customer_phone_snapshot': customer?['phone'] ?? '',
+          'customer_address_snapshot': customer?['address'] ?? '',
+          'updated_at': now,
+        },
+        where: 'id = ?',
+        whereArgs: [input.id],
+      );
+      await transaction.delete(
+        'invoice_items',
+        where: 'invoice_id = ?',
+        whereArgs: [input.id],
+      );
+      for (var index = 0; index < input.items.length; index++) {
+        final item = input.items[index];
+        await transaction.insert('invoice_items', {
+          'invoice_id': input.id,
+          'product_id': item.productId,
+          'description_snapshot': item.description.trim(),
+          'quantity': item.quantity,
+          'unit': item.unit.trim(),
+          'unit_price_minor': item.unitPriceMinor,
+          'line_total_minor': totals.lineTotals[index],
+        });
+      }
+      await transaction.insert('audit_logs', {
+        'entity_type': 'invoice',
+        'entity_id': input.id,
+        'action': 'updated',
+        'metadata': jsonEncode({
+          'invoice_number': invoice['invoice_number'],
+          'grand_total_minor': totals.grandTotalMinor,
+        }),
+        'created_at': now,
+      });
+    });
+  }
+
+  Future<void> deleteUnpaid(int invoiceId) async {
+    await _appDatabase.financialTransaction((transaction) async {
+      final invoiceRows = await transaction.query(
+        'invoices',
+        columns: ['id', 'invoice_number', 'status'],
+        where: 'id = ?',
+        whereArgs: [invoiceId],
+        limit: 1,
+      );
+      if (invoiceRows.isEmpty) {
+        throw StateError('The invoice no longer exists.');
+      }
+      final invoice = invoiceRows.single;
+      if (invoice['status'] != 'issued') {
+        throw StateError('Only issued invoices can be deleted.');
+      }
+      final paymentRows = await transaction.query(
+        'payments',
+        columns: ['id'],
+        where: 'invoice_id = ?',
+        whereArgs: [invoiceId],
+        limit: 1,
+      );
+      if (paymentRows.isNotEmpty) {
+        throw StateError(
+          'This invoice has payments and cannot be deleted. Payment history is immutable.',
+        );
+      }
+      final now = DateTime.now().toUtc().toIso8601String();
+      await transaction.insert('audit_logs', {
+        'entity_type': 'invoice',
+        'entity_id': invoiceId,
+        'action': 'deleted',
+        'metadata': jsonEncode({'invoice_number': invoice['invoice_number']}),
+        'created_at': now,
+      });
+      await transaction.delete(
+        'invoices',
+        where: 'id = ?',
+        whereArgs: [invoiceId],
+      );
+    });
   }
 
   Future<SavedInvoice?> _findByToken(DatabaseExecutor db, String token) async {

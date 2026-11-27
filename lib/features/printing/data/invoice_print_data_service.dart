@@ -36,7 +36,7 @@ class InvoicePrintDataService {
             logoPath: currentCompany.logoPath,
           );
     final settings = await _settings.load();
-    final logo = await _loadLogo(company.logoPath);
+    final logo = settings.showLogo ? await _loadLogo(company.logoPath) : null;
     return InvoicePrintModel(
       company: company,
       invoice: invoice,

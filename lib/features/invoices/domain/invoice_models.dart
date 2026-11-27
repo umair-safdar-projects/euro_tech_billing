@@ -48,6 +48,22 @@ class InvoiceSaveInput {
   final InitialPaymentInput? initialPayment;
 }
 
+class InvoiceUpdateInput {
+  const InvoiceUpdateInput({
+    required this.id,
+    required this.customerId,
+    required this.issueDate,
+    required this.items,
+    required this.discountMinor,
+  });
+
+  final int id;
+  final int? customerId;
+  final DateTime issueDate;
+  final List<InvoiceLineInput> items;
+  final int discountMinor;
+}
+
 class InitialPaymentInput {
   const InitialPaymentInput({
     required this.amountMinor,
@@ -121,6 +137,7 @@ class InvoiceDetail {
   const InvoiceDetail({
     required this.id,
     required this.invoiceNumber,
+    this.customerId,
     required this.issueDate,
     required this.customerName,
     required this.customerPhone,
@@ -138,6 +155,7 @@ class InvoiceDetail {
 
   final int id;
   final String invoiceNumber;
+  final int? customerId;
   final DateTime issueDate;
   final String customerName;
   final String customerPhone;
@@ -177,6 +195,7 @@ class InvoiceCompanyIdentity {
 
 class InvoiceDetailItem {
   const InvoiceDetailItem({
+    this.productId,
     required this.description,
     required this.quantity,
     required this.unit,
@@ -186,6 +205,7 @@ class InvoiceDetailItem {
 
   factory InvoiceDetailItem.fromMap(Map<String, Object?> map) =>
       InvoiceDetailItem(
+        productId: map['product_id'] as int?,
         description: map['description_snapshot']! as String,
         quantity: map['quantity']! as int,
         unit: map['unit']! as String,
@@ -194,6 +214,7 @@ class InvoiceDetailItem {
       );
 
   final String description;
+  final int? productId;
   final int quantity;
   final String unit;
   final int unitPriceMinor;

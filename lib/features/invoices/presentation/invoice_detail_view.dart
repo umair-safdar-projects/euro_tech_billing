@@ -8,6 +8,10 @@ import '../../settings/domain/company_settings.dart';
 import '../../payments/data/payment_repository.dart';
 import '../../payments/presentation/payment_dialogs.dart';
 import '../../printing/presentation/invoice_print_actions.dart';
+import '../../shell/domain/shell_destination.dart';
+import '../../shell/presentation/shell_controller.dart';
+import '../data/invoice_repository.dart';
+import 'invoice_editor_controller.dart';
 import '../domain/invoice_models.dart';
 
 class InvoiceDetailDialog extends StatelessWidget {
@@ -65,6 +69,35 @@ class InvoiceDetailDialog extends StatelessWidget {
                     onPressed: () => exportInvoicePdf(detail.id),
                     icon: const Icon(Icons.download_rounded),
                   ),
+                  if (detail.paymentStatus == 'unpaid')
+                    PopupMenuButton<String>(
+                      tooltip: 'Invoice actions',
+                      onSelected: (value) {
+                        if (value == 'edit') {
+                          _editInvoice(context);
+                        } else if (value == 'delete') {
+                          _deleteInvoice(context);
+                        }
+                      },
+                      itemBuilder: (context) => const [
+                        PopupMenuItem(
+                          value: 'edit',
+                          child: ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(Icons.edit_outlined),
+                            title: Text('Edit invoice'),
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(Icons.delete_outline_rounded),
+                            title: Text('Delete invoice'),
+                          ),
+                        ),
+                      ],
+                    ),
                   const SizedBox(width: 8),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
@@ -249,6 +282,68 @@ class InvoiceDetailDialog extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _editInvoice(BuildContext context) async {
+    try {
+      final editor = Get.find<InvoiceEditorController>();
+      await editor.prepareForEdit(detail);
+      if (!context.mounted) return;
+      Navigator.pop(context);
+      Get.find<ShellController>().select(ShellDestination.newInvoice.index);
+    } catch (error) {
+      Get.snackbar(
+        'Unable to edit invoice',
+        error is FormatException || error is StateError
+            ? error.toString().replaceFirst('Bad state: ', '')
+            : 'Only unpaid invoices without payments can be edited.',
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(20),
+      );
+    }
+  }
+
+  Future<void> _deleteInvoice(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete this invoice?'),
+        content: Text(
+          'Invoice ${detail.invoiceNumber} has no recorded payment. Its items will be deleted and the invoice number will not be reused.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Keep invoice'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete invoice'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await Get.find<InvoiceRepository>().deleteUnpaid(detail.id);
+      if (context.mounted) Navigator.pop(context);
+      Get.snackbar(
+        'Invoice deleted',
+        '${detail.invoiceNumber} was removed. The number will not be reused.',
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(20),
+      );
+    } catch (error) {
+      Get.snackbar(
+        'Invoice was not deleted',
+        error is StateError
+            ? error.toString().replaceFirst('Bad state: ', '')
+            : 'The invoice could not be deleted.',
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(20),
+      );
+    }
   }
 
   Widget _total(String label, int value, {bool strong = false}) => Padding(

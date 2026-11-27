@@ -9,6 +9,8 @@ class PrintingSettingsController extends GetxController {
   final PrintingSettingsRepository _repository;
   final paper = InvoicePaper.a5.obs;
   final placement = A4Placement.centered.obs;
+  final showLogo = true.obs;
+  final showEmail = true.obs;
   final footer = TextEditingController();
   final isLoading = true.obs;
   final isSaving = false.obs;
@@ -25,6 +27,8 @@ class PrintingSettingsController extends GetxController {
       final value = await _repository.load();
       paper.value = value.paper;
       placement.value = value.a4Placement;
+      showLogo.value = value.showLogo;
+      showEmail.value = value.showEmail;
       footer.text = value.footerMessage;
     } finally {
       isLoading.value = false;
@@ -39,6 +43,8 @@ class PrintingSettingsController extends GetxController {
           paper: paper.value,
           a4Placement: placement.value,
           footerMessage: footer.text,
+          showLogo: showLogo.value,
+          showEmail: showEmail.value,
         ),
       );
       Get.snackbar(

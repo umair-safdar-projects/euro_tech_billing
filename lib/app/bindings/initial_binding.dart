@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:get/get.dart';
 
 import '../../core/database/app_database.dart';
+import '../../core/licensing/license_service.dart';
 import '../../features/customers/data/customer_repository.dart';
 import '../../features/customers/presentation/customers_controller.dart';
 import '../../features/credit/data/credit_repository.dart';
@@ -36,6 +39,8 @@ class InitialBinding extends Bindings {
   @override
   void dependencies() {
     Get.put(_database, permanent: true);
+    final license = Get.put(LicenseService(), permanent: true);
+    unawaited(license.init());
     Get.lazyPut(() => CompanySettingsRepository(Get.find()), fenix: true);
     Get.lazyPut(() => ProductRepository(Get.find()), fenix: true);
     Get.lazyPut(() => CustomerRepository(Get.find()), fenix: true);

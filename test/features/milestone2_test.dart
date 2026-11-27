@@ -8,6 +8,8 @@ import 'package:eurotechbilling/features/invoices/data/invoice_repository.dart';
 import 'package:eurotechbilling/features/invoices/domain/invoice_calculator.dart';
 import 'package:eurotechbilling/features/invoices/domain/invoice_models.dart';
 import 'package:eurotechbilling/features/products/data/product_repository.dart';
+import 'package:eurotechbilling/features/payments/data/payment_repository.dart';
+import 'package:eurotechbilling/features/payments/domain/payment_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -184,6 +186,92 @@ void main() {
       expect(await appDatabase.database.query('audit_logs'), hasLength(2));
     },
   );
+
+  test(
+    'unpaid invoices can be corrected and deleted without reusing numbers',
+    () async {
+      final saved = await invoices.save(
+        _input(
+          customer.id,
+          'editable',
+          description: 'Wrong service',
+          price: 100,
+        ),
+      );
+      await invoices.updateUnpaid(
+        InvoiceUpdateInput(
+          id: saved.id,
+          customerId: customer.id,
+          issueDate: DateTime(2026, 1, 2),
+          items: const [
+            InvoiceLineInput(
+              description: 'Correct service',
+              quantity: 1,
+              unit: 'piece',
+              unitPriceMinor: 250,
+            ),
+          ],
+          discountMinor: 0,
+        ),
+      );
+      final updated = await invoices.detail(saved.id);
+      expect(updated?.items.single.description, 'Correct service');
+      expect(updated?.grandTotalMinor, 250);
+      expect(updated?.issueDate, DateTime(2026, 1, 2));
+
+      await invoices.deleteUnpaid(saved.id);
+      expect(await invoices.detail(saved.id), isNull);
+      final next = await invoices.save(
+        _input(customer.id, 'after-delete', description: 'Next', price: 100),
+      );
+      expect(next.invoiceNumber, 'ET-000002');
+      final actions = await appDatabase.database.query(
+        'audit_logs',
+        columns: ['action'],
+        where: 'entity_type = ? AND entity_id = ?',
+        whereArgs: ['invoice', saved.id],
+        orderBy: 'id',
+      );
+      expect(actions.map((row) => row['action']), [
+        'created',
+        'updated',
+        'deleted',
+      ]);
+    },
+  );
+
+  test('invoices with payments cannot be corrected or deleted', () async {
+    final saved = await invoices.save(
+      _input(customer.id, 'paid', description: 'Paid service', price: 100),
+    );
+    final payments = PaymentRepository(appDatabase);
+    await payments.record(
+      PaymentInput(
+        invoiceId: saved.id,
+        amountMinor: 200,
+        method: 'cash',
+        paymentDate: DateTime(2026, 1, 2),
+        saveToken: 'payment-paid',
+      ),
+    );
+    final update = InvoiceUpdateInput(
+      id: saved.id,
+      customerId: customer.id,
+      issueDate: DateTime(2026, 1, 2),
+      items: const [
+        InvoiceLineInput(
+          description: 'Changed paid service',
+          quantity: 1,
+          unit: 'piece',
+          unitPriceMinor: 200,
+        ),
+      ],
+      discountMinor: 0,
+    );
+    await expectLater(invoices.updateUnpaid(update), throwsStateError);
+    await expectLater(invoices.deleteUnpaid(saved.id), throwsStateError);
+    expect(await invoices.detail(saved.id), isNotNull);
+  });
 
   test(
     'failed item insert rolls back invoice, number allocation, and audit',

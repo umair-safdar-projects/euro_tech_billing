@@ -26,8 +26,10 @@ class InvoiceEditorScreen extends GetView<InvoiceEditorController> {
         padding: const EdgeInsets.all(32),
         children: [
           PageHeader(
-            title: 'New Invoice',
-            subtitle: 'Provisional invoice • Number allocated only when saved',
+            title: controller.isEditing ? 'Edit Invoice' : 'New Invoice',
+            subtitle: controller.isEditing
+                ? 'Correct this unpaid invoice without changing its number or payment history.'
+                : 'Provisional invoice • Number allocated only when saved',
             action: Text(
               DateFormat('dd MMM yyyy').format(DateTime.now()),
               style: Theme.of(context).textTheme.titleMedium,
@@ -36,11 +38,32 @@ class InvoiceEditorScreen extends GetView<InvoiceEditorController> {
           const SizedBox(height: 24),
           _customerCard(context),
           const SizedBox(height: 18),
+          if (controller.isEditing)
+            const Card(
+              color: Color(0xFFFFF8E1),
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline_rounded, color: Colors.orange),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Only unpaid invoices without payments can be corrected. Payment history remains immutable.',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          if (controller.isEditing) const SizedBox(height: 18),
           _itemsCard(context),
           const SizedBox(height: 18),
           _summaryCard(context),
-          const SizedBox(height: 18),
-          _paymentCard(context),
+          if (!controller.isEditing) ...[
+            const SizedBox(height: 18),
+            _paymentCard(context),
+          ],
           const SizedBox(height: 18),
           _actions(context),
         ],
@@ -481,20 +504,22 @@ class InvoiceEditorScreen extends GetView<InvoiceEditorController> {
         onPressed: () => _confirmClear(context),
         child: const Text('Clear form'),
       ),
-      const SizedBox(width: 10),
-      OutlinedButton(
-        onPressed: controller.isSaving.value
-            ? null
-            : () => _save(context, startNew: true),
-        child: const Text('Save & New Invoice'),
-      ),
+      if (!controller.isEditing) ...[
+        const SizedBox(width: 10),
+        OutlinedButton(
+          onPressed: controller.isSaving.value
+              ? null
+              : () => _save(context, startNew: true),
+          child: const Text('Save & New Invoice'),
+        ),
+      ],
       const SizedBox(width: 10),
       ElevatedButton.icon(
         onPressed: controller.isSaving.value
             ? null
             : () => _save(context, startNew: false),
         icon: const Icon(Icons.save_rounded),
-        label: const Text('Save Invoice'),
+        label: Text(controller.isEditing ? 'Save Changes' : 'Save Invoice'),
       ),
     ],
   );
@@ -503,8 +528,10 @@ class InvoiceEditorScreen extends GetView<InvoiceEditorController> {
     try {
       final saved = await controller.save(startNew: startNew);
       Get.snackbar(
-        'Invoice saved',
-        saved.paymentId == null
+        controller.isEditing ? 'Invoice updated' : 'Invoice saved',
+        controller.isEditing
+            ? '${saved.invoiceNumber} was updated successfully.'
+            : saved.paymentId == null
             ? '${saved.invoiceNumber} was saved as unpaid.'
             : '${saved.invoiceNumber} was saved with its initial payment.',
         snackPosition: SnackPosition.BOTTOM,

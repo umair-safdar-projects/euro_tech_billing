@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../../core/licensing/license_service.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/utils/submission_token.dart';
 import '../../customers/data/customer_repository.dart';
@@ -69,6 +70,9 @@ class InvoiceEditorController extends GetxController {
   final initialPaymentText = ''.obs;
   final isLoading = true.obs;
   final isSaving = false.obs;
+  final editingInvoiceId = RxnInt();
+  final editingInvoiceNumber = RxnString();
+  final editingIssueDate = Rxn<DateTime>();
   String _saveToken = SubmissionToken.create();
 
   @override
@@ -160,6 +164,9 @@ class InvoiceEditorController extends GetxController {
     if (isSaving.value) {
       throw StateError('An invoice save is already in progress.');
     }
+    if (Get.isRegistered<LicenseService>()) {
+      await Get.find<LicenseService>().requireActive();
+    }
     final customer = selectedCustomer.value;
     final items = lines.map((line) => line.toInput()).toList(growable: false);
     final discount = Currency.parseRupees(discountText.value);
@@ -167,6 +174,28 @@ class InvoiceEditorController extends GetxController {
       throw const FormatException('Enter a valid discount.');
     }
     final totals = InvoiceCalculator.calculate(items, discount);
+    final existingId = editingInvoiceId.value;
+    if (existingId != null) {
+      isSaving.value = true;
+      try {
+        await _invoiceRepository.updateUnpaid(
+          InvoiceUpdateInput(
+            id: existingId,
+            customerId: customer?.id,
+            issueDate: editingIssueDate.value ?? DateTime.now(),
+            items: items,
+            discountMinor: discount,
+          ),
+        );
+        await _refreshAfterInvoiceChange();
+        return SavedInvoice(
+          id: existingId,
+          invoiceNumber: editingInvoiceNumber.value ?? 'Invoice',
+        );
+      } finally {
+        isSaving.value = false;
+      }
+    }
     InitialPaymentInput? initialPayment;
     if (paymentMode.value != 'pay_later') {
       final amount = paymentMode.value == 'full'
@@ -201,12 +230,7 @@ class InvoiceEditorController extends GetxController {
           initialPayment: initialPayment,
         ),
       );
-      if (Get.isRegistered<DashboardController>()) {
-        await Get.find<DashboardController>().load();
-      }
-      if (Get.isRegistered<PaymentsCreditController>()) {
-        await Get.find<PaymentsCreditController>().refreshAll(targetPage: 1);
-      }
+      await _refreshAfterInvoiceChange();
       if (startNew) clear(force: true);
       return saved;
     } finally {
@@ -220,6 +244,40 @@ class InvoiceEditorController extends GetxController {
       discountText.value != '0' ||
       paymentMode.value != 'pay_later';
 
+  bool get isEditing => editingInvoiceId.value != null;
+
+  Future<void> prepareForEdit(InvoiceDetail detail) async {
+    if (detail.paymentStatus != 'unpaid') {
+      throw StateError('Only unpaid invoices without payments can be edited.');
+    }
+    await loadLookups();
+    editingInvoiceId.value = detail.id;
+    editingInvoiceNumber.value = detail.invoiceNumber;
+    editingIssueDate.value = detail.issueDate;
+    selectedCustomer.value = detail.customerId == null
+        ? null
+        : customers.firstWhereOrNull(
+            (customer) => customer.id == detail.customerId,
+          );
+    lines.assignAll(
+      detail.items.map(
+        (item) => EditableInvoiceLine(
+          productId: item.productId,
+          description: item.description,
+          unit: item.unit,
+          quantityText: item.quantity.toString(),
+          priceText: _minorForInput(item.unitPriceMinor),
+        ),
+      ),
+    );
+    discountText.value = _minorForInput(detail.discountMinor);
+    paymentMode.value = 'pay_later';
+    paymentMethod.value = 'cash';
+    initialPaymentText.value = '';
+    validationMessage.value = null;
+    recalculate();
+  }
+
   void clear({bool force = false}) {
     selectedCustomer.value = null;
     lines.clear();
@@ -231,7 +289,19 @@ class InvoiceEditorController extends GetxController {
     paymentMode.value = 'pay_later';
     paymentMethod.value = 'cash';
     initialPaymentText.value = '';
+    editingInvoiceId.value = null;
+    editingInvoiceNumber.value = null;
+    editingIssueDate.value = null;
     _saveToken = SubmissionToken.create();
+  }
+
+  Future<void> _refreshAfterInvoiceChange() async {
+    if (Get.isRegistered<DashboardController>()) {
+      await Get.find<DashboardController>().load();
+    }
+    if (Get.isRegistered<PaymentsCreditController>()) {
+      await Get.find<PaymentsCreditController>().refreshAll(targetPage: 1);
+    }
   }
 
   String _minorForInput(int value) => value.remainder(100) == 0

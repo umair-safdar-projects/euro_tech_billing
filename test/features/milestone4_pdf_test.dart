@@ -100,6 +100,41 @@ void main() {
     expect(centered.left, greaterThan(topLeft.left));
   });
 
+  test('print visibility preferences persist with safe defaults', () async {
+    final database = AppDatabase.forTesting(
+      factory: databaseFactoryFfi,
+      databasePath: inMemoryDatabasePath,
+    );
+    await database.initialize();
+    addTearDown(database.close);
+    final settings = PrintingSettingsRepository(database);
+
+    final defaults = await settings.load();
+    expect(defaults.showLogo, isTrue);
+    expect(defaults.showEmail, isTrue);
+
+    await settings.save(
+      const PrintingSettings(
+        showLogo: false,
+        showEmail: false,
+        footerMessage: 'Paid invoices only',
+      ),
+    );
+    final saved = await settings.load();
+    expect(saved.showLogo, isFalse);
+    expect(saved.showEmail, isFalse);
+    expect(saved.footerMessage, 'Paid invoices only');
+  });
+
+  test('optional business email can be hidden from the PDF header', () async {
+    final text = _extractText(
+      await service.generate(
+        _model(settings: const PrintingSettings(showEmail: false)),
+      ),
+    );
+    expect(text, isNot(contains('hamzamirza11579@gmail.com')));
+  });
+
   test('multipage A4 invoices use A4 media boxes in both placements', () async {
     final items = List.generate(
       50,
