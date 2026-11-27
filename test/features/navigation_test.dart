@@ -16,6 +16,7 @@ import 'package:eurotechbilling/features/shell/domain/shell_destination.dart';
 import 'package:eurotechbilling/features/shell/presentation/app_shell.dart';
 import 'package:eurotechbilling/features/shell/presentation/shell_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:path/path.dart' as p;
@@ -37,6 +38,16 @@ void main() {
     );
     expect(AppShell.defaultScreens, hasLength(ShellDestination.values.length));
     expect(AppShell.defaultScreens.whereType<EmptyModuleScreen>(), isEmpty);
+  });
+
+  test('company branding assets are bundled for installed builds', () async {
+    final logo = await rootBundle.load('assets/branding/euro_tech_logo.png');
+    final icon = await rootBundle.load(
+      'assets/branding/euro_tech_icon_256.png',
+    );
+
+    expect(logo.lengthInBytes, greaterThan(10_000));
+    expect(icon.lengthInBytes, greaterThan(5_000));
   });
 
   testWidgets('application root starts with the desktop shell', (tester) async {

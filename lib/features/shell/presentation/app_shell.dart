@@ -296,21 +296,14 @@ class _BrandMark extends StatelessWidget {
   const _BrandMark();
 
   @override
-  Widget build(BuildContext context) => Container(
-    width: 42,
-    height: 42,
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(10),
-    ),
-    alignment: Alignment.center,
-    child: const Text(
-      'ET',
-      style: TextStyle(
-        color: AppTheme.navy,
-        fontWeight: FontWeight.w900,
-        fontSize: 17,
-      ),
+  Widget build(BuildContext context) => ClipRRect(
+    borderRadius: BorderRadius.circular(10),
+    child: Image.asset(
+      'assets/branding/euro_tech_icon_256.png',
+      width: 42,
+      height: 42,
+      fit: BoxFit.cover,
+      semanticLabel: 'Euro Tech company logo',
     ),
   );
 }

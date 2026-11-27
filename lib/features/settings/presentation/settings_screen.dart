@@ -119,9 +119,11 @@ class SettingsScreen extends GetView<SettingsController> {
                       builder: (context, constraints) {
                         final path = Obx(
                           () => Text(
-                            controller.logoPath.value?.isNotEmpty ?? false
-                                ? controller.logoPath.value!
-                                : 'No company logo selected',
+                            controller.logoPath.value == null
+                                ? 'Using built-in Euro Tech logo'
+                                : controller.logoPath.value!.isEmpty
+                                ? 'Logo disabled'
+                                : controller.logoPath.value!,
                             overflow: TextOverflow.ellipsis,
                           ),
                         );
@@ -145,9 +147,8 @@ class SettingsScreen extends GetView<SettingsController> {
                         final remove =
                             controller.logoPath.value?.isNotEmpty ?? false
                             ? IconButton(
-                                tooltip: 'Remove logo',
-                                onPressed: () =>
-                                    controller.logoPath.value = null,
+                                tooltip: 'Disable logo',
+                                onPressed: () => controller.logoPath.value = '',
                                 icon: const Icon(Icons.close_rounded),
                               )
                             : null;

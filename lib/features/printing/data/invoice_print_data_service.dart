@@ -1,5 +1,6 @@
 import 'dart:io';
-import 'dart:typed_data';
+
+import 'package:flutter/services.dart';
 
 import '../../invoices/data/invoice_repository.dart';
 import '../../settings/data/company_settings_repository.dart';
@@ -8,6 +9,8 @@ import '../domain/printing_models.dart';
 import 'printing_settings_repository.dart';
 
 class InvoicePrintDataService {
+  static const defaultLogoAsset = 'assets/branding/euro_tech_logo.png';
+
   InvoicePrintDataService(this._invoices, this._company, this._settings);
 
   final InvoiceRepository _invoices;
@@ -33,16 +36,7 @@ class InvoicePrintDataService {
             logoPath: currentCompany.logoPath,
           );
     final settings = await _settings.load();
-    Uint8List? logo;
-    final logoPath = company.logoPath?.trim();
-    if (logoPath != null && logoPath.isNotEmpty) {
-      try {
-        final file = File(logoPath);
-        if (await file.exists()) logo = await file.readAsBytes();
-      } catch (_) {
-        logo = null;
-      }
-    }
+    final logo = await _loadLogo(company.logoPath);
     return InvoicePrintModel(
       company: company,
       invoice: invoice,
@@ -50,5 +44,31 @@ class InvoicePrintDataService {
       balanceAsOf: DateTime.now(),
       logoBytes: logo,
     );
+  }
+
+  Future<Uint8List?> _loadLogo(String? configuredPath) async {
+    final path = configuredPath?.trim();
+    if (path != null) {
+      if (path.isEmpty) return null;
+      if (path.startsWith('asset:')) {
+        return _loadAsset(path.substring('asset:'.length));
+      }
+      try {
+        final file = File(path);
+        if (await file.exists()) return await file.readAsBytes();
+      } catch (_) {
+        // Fall through to the bundled company mark for stale paths.
+      }
+    }
+    return _loadAsset(defaultLogoAsset);
+  }
+
+  Future<Uint8List?> _loadAsset(String assetPath) async {
+    try {
+      final data = await rootBundle.load(assetPath);
+      return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+    } catch (_) {
+      return null;
+    }
   }
 }
